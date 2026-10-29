@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#026e69">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="野鳥野帳">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>野鳥野帳</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="species.js"></script>
+<script src="species-info.js"></script>
+<style>
+:root{--bg:#eaf0ec;--card:#fff;--fg:#14251b;--sub:#55665c;--ac:#2b5d44;--acfg:#fff;--bd:#c6d3ca;--warn:#b4530a}
+@media(prefers-color-scheme:dark){:root{--bg:#101a14;--card:#182620;--fg:#e4eee7;--sub:#93a89b;--ac:#6fc59a;--acfg:#0c1a12;--bd:#2c4035;--warn:#f0a35e}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 -apple-system,"Hiragino Sans","Noto Sans JP",sans-serif;padding:env(safe-area-inset-top) 0 calc(72px + env(safe-area-inset-bottom))}
+header{padding:14px 16px 4px}
+h1{font-size:19px;margin:0}
+.sub{color:var(--sub);font-size:13px}
+section{display:none;padding:8px 14px}
+section.on{display:block}
+label{display:block;font-size:13px;color:var(--sub);margin:10px 0 3px}
+input,select,textarea{width:100%;font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:10px}
+input[type=checkbox]{width:auto}
+.row{display:flex;gap:8px}.row>*{flex:1}
+button{font:inherit;border:1px solid var(--ac);background:var(--card);color:var(--ac);border-radius:8px;padding:10px 14px}
+button.p{background:var(--ac);color:var(--acfg);font-weight:600;width:100%;margin-top:14px;padding:13px}
+button.s{padding:8px 10px;font-size:13px;flex:0 0 auto}
+nav{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--bd);padding-bottom:env(safe-area-inset-bottom);z-index:40}
+nav button{flex:1;border:0;border-radius:0;padding:14px 4px;background:none;color:var(--sub)}
+nav button.on{color:var(--ac);font-weight:700;box-shadow:inset 0 3px var(--ac)}
+.item{background:var(--card);border:1px solid var(--bd);border-left:4px solid var(--ac);border-radius:8px;padding:8px 10px;margin:8px 0;display:flex;gap:8px;align-items:flex-start}
+.item.env{border-left-color:var(--warn)}
+.item>div:first-child{flex:1;font-size:14px;min-width:0;overflow-wrap:anywhere}.item b{font-size:16px}
+.item .ib{flex:0 0 auto;display:flex}.item .x{border:0;color:var(--warn);padding:2px 8px;background:none}
+.gps{font-size:13px;color:var(--sub);margin-top:6px}
+#msg{min-height:20px;font-size:13px;color:var(--warn);margin-top:6px}
+h2{font-size:16px;margin:16px 0 4px}
+[hidden]{display:none!important}
+#home{min-height:100dvh;padding:calc(24px + env(safe-area-inset-top)) 14px;display:flex;flex-direction:column;justify-content:center}
+.hc{display:flex;gap:12px;margin-top:18px}
+.hc button{flex:1;padding:12px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:14px;border-color:var(--bd);background:var(--card)}
+.hc img{width:min(100%,160px);aspect-ratio:1/1;object-fit:contain}.hc b{color:var(--fg)}.hc span{font-size:12px;color:var(--sub)}
+.hl{margin-top:18px;text-align:center}
+#pt{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+.ps{display:none}.ps.on{display:block}.pb{padding:6px 14px}
+#mapw{position:sticky;top:0;z-index:5;height:clamp(280px,56dvh,560px);border-bottom:1px solid var(--bd)}
+#map,#omap{height:100%}#pLoc{position:absolute;right:10px;bottom:10px;z-index:1000}#pOff{position:absolute;left:10px;bottom:10px;z-index:1000}
+.pin{width:26px;height:26px;border-radius:50%;background:#1b7f4b;color:#fff;border:2.5px solid #fff;font:bold 12px/21px sans-serif;text-align:center;box-shadow:0 1px 4px #0006}
+.pin.new{background:#d9640f}
+/* 種名の候補 */
+.ac{position:relative}
+.acl{list-style:none;margin:2px 0 0;padding:0;position:absolute;left:0;right:0;z-index:30;background:var(--card);border:1px solid var(--bd);border-radius:8px;max-height:260px;overflow:auto;box-shadow:0 6px 20px #0004}
+.acl li{padding:10px 12px;border-bottom:1px solid var(--bd);display:flex;gap:8px;align-items:baseline}
+.acl li:last-child{border-bottom:0}.acl li small{color:var(--sub);font-size:11px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.chips:empty{display:none}
+.chip{padding:6px 11px;border-radius:999px;font-size:13px}
+.spi{font-size:12px;color:var(--sub);min-height:16px;margin-top:3px}
+.rl{font-size:10px;border-radius:4px;padding:0 5px;color:#fff;background:#666;font-weight:700}
+.rl-CR{background:#b3261e}.rl-EN{background:#c4561a}.rl-VU{background:#a77c00}.rl-NT{background:#4b7f52}
+.step{display:flex;gap:6px}.step input{text-align:center}.step button{flex:0 0 46px;padding:8px 0}
+/* 軌跡バー */
+#trkbar{display:flex;align-items:center;gap:10px;margin:6px 14px 0;padding:8px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--card);font-size:13px}
+#trkbar.on{border-color:var(--ac);box-shadow:inset 4px 0 var(--ac)}#trkbar>div{flex:1;min-width:0}
+#trkst{display:block;font-size:14px}.chk{display:flex;align-items:center;gap:6px;margin:4px 0 0;font-size:12px;color:var(--sub)}
+.blk{margin-top:14px;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--card)}
+.blk h3{margin:0 0 4px;font-size:14px}
+/* ダイアログ */
+.ov{position:fixed;inset:0;z-index:3000;background:#0007;display:flex;align-items:center;justify-content:center;padding:20px}
+.ov .dbox{background:var(--card);color:var(--fg);border-radius:14px;padding:20px 18px;max-width:420px;width:100%;max-height:92dvh;overflow:auto;box-shadow:0 8px 30px #0006}
+.ov h3{margin:0 0 6px;font-size:18px;color:var(--ac)}.ov p{margin:6px 0;font-size:14px}.ov .fn{word-break:break-all;background:var(--bg);border-radius:6px;padding:6px 8px;font-size:13px}
+.ov button.b{width:100%;margin-top:10px;padding:13px}#dYes{border-color:var(--warn);color:var(--warn)}
+#toast{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:2500;background:#222;color:#fff;border-radius:10px;padding:10px 12px;display:flex;gap:10px;align-items:center;justify-content:space-between;font-size:14px}
+#toast button{border-color:#fff;color:#fff;background:none;padding:6px 10px;white-space:nowrap}
+.bar{height:8px;background:var(--bd);border-radius:4px;overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;width:0;background:var(--ac)}
+</style>
+</head>
+<body>
+
+<div id="home"><h1>野鳥野帳</h1><p class="sub">観察の方法を選んでください</p>
+<div class="hc"><button data-go="pt"><img src="sel-point.png" alt=""><b>Point Census</b><span>定点観察</span></button><button data-go="ln"><img src="sel-line.png" alt=""><b>Line Census</b><span>ライン観察</span></button></div>
+<div class="hl"><button class="s" data-go="om">オフライン地図を保存</button><div class="sub" id="homeTrk" style="margin-top:10px"></div></div></div>
+
+<div id="ln" hidden>
+<header><button class="s" data-go="home" style="float:right">メニュー</button><h1>野鳥ラインセンサス野帳</h1><div class="sub">入力は自動保存。電波がなくても記録できます。</div></header>
+<div id="trkbar"><div><b id="trkst"></b><span class="sub" id="trkinfo"></span><label class="chk"><input type="checkbox" id="wl" checked> 記録中は画面を点けたままにする</label></div><button class="s" id="trkBtn">開始</button><button class="s" id="trkClr" hidden style="color:var(--warn);border-color:var(--warn)">消去</button></div>
+
+<section id="t0" class="on">
+<label>調査日</label><input type="date" id="date">
+<label>観測場所（山名）</label><input id="mountain">
+<label>ルート</label><input id="route" placeholder="例: 登山口〜山頂〜尾根">
+<label>調査者</label><input id="members">
+<div class="row">
+<div><label>開始時刻</label><div class="row"><input type="time" id="start"><button class="s" data-now="start">今</button></div></div>
+<div><label>終了時刻</label><div class="row"><input type="time" id="end"><button class="s" data-now="end">今</button></div></div>
+</div>
+<button class="s" id="wxBtn" style="margin-top:12px;width:100%">天気・気温を自動入力(電波が必要)</button>
+<div class="gps" id="wxMsg"></div>
+<div class="row">
+<div><label>天気</label><select id="weather"></select></div>
+<div><label>風</label><select id="wind"></select></div>
+</div>
+<div class="row">
+<div><label>気温(℃)</label><input type="number" inputmode="decimal" id="temp"></div>
+<div><label>総歩行距離(km)</label><div class="row"><input type="number" inputmode="decimal" id="dist"><button class="s" id="distAuto" title="軌跡から入力">軌跡から</button></div></div>
+</div>
+<div class="blk"><h3>区間の自動割り当て</h3>
+<select id="segmode"></select>
+<div class="sub" style="margin-top:4px">鳥・環境の記録時、「区間」欄が空なら自動で入ります。距離ごとは軌跡記録の開始が必要です(上の「開始」)。標高ごとはGPSの標高を使います。</div></div>
+<label>調査全体のメモ(見落とし・聞き取りにくかった条件など)</label><textarea id="note" rows="3"></textarea>
+<div class="gps">天気データ: Open-Meteo.com</div>
+</section>
+
+<section id="t1">
+<div class="chips" id="recL"></div>
+<label>種名</label>
+<div class="ac"><input id="sp" placeholder="ひらがな・ローマ字でもOK(例: うぐいす / ugui)" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><ul class="acl" id="sp_l" hidden></ul></div>
+<div class="spi" id="sp_i"></div>
+<div class="row">
+<div><label>個体数</label><div class="step"><button class="s" data-st="cnt" data-d="-1">－</button><input type="number" inputmode="numeric" id="cnt" value="1" min="1"><button class="s" data-st="cnt" data-d="1">＋</button></div></div>
+<div><label>確認方法</label><select id="how"></select></div>
+</div>
+<div class="row">
+<div><label>雌雄・成幼</label><select id="sex"></select></div>
+<div><label>行動</label><select id="beh"></select></div>
+</div>
+<div class="row">
+<div><label>区間(空なら自動)</label><input id="seg" placeholder="例: 3"></div>
+<div><label>ルートからの距離(m)</label><input type="number" inputmode="numeric" id="off"></div>
+</div>
+<label>メモ(同定に不確実なら「○○？」と記入)</label><input id="bmemo">
+<button class="p" id="addBird">記録する(時刻・位置を自動取得)</button>
+<div class="gps" id="gpsB"></div><div id="msg"></div>
+<h2>今日の鳥記録 <span id="nB"></span></h2><div id="lB"></div>
+</section>
+
+<section id="t2">
+<div class="row">
+<div><label>植生</label><select id="veg"></select></div>
+<div><label>区間(空なら自動)</label><input id="eseg"></div>
+</div>
+<label>林の状態・下草・水場</label><input id="estate">
+<label>餌資源(開花・結実・昆虫)</label><input id="efood">
+<label>人為的影響(登山者数・整備・シカの食痕など)</label><input id="ehum">
+<button class="p" id="addEnv">環境を記録する(時刻・位置を自動取得)</button>
+<h2>環境記録 <span id="nE"></span></h2><div id="lE"></div>
+</section>
+
+<section id="t3">
+<p class="sub">鳥・環境・調査概要・軌跡・地図(位置と軌跡の画像)を1つのExcelにまとめます。地図の取得にはネット接続が必要なので、下山後に電波のある場所で出力してください。</p>
+<div class="gps upnote"></div>
+<button class="p" id="exp">Excelで出力</button>
+<button class="p" id="expCsv" style="background:var(--card);color:var(--ac)">CSVで出力(予備)</button>
+<button class="p" id="expGpx" style="background:var(--card);color:var(--ac)">GPXで出力(軌跡と記録地点)</button>
+<div class="gps" id="expMsg"></div><div class="gps" id="sum"></div>
+<button class="s" id="clr" style="margin-top:28px;color:var(--warn);border-color:var(--warn)">全データを消去</button>
+</section>
+
+<nav><button class="on" data-t="t0">調査情報</button><button data-t="t1">鳥</button><button data-t="t2">環境</button><button data-t="t3">出力</button></nav>
+</div>
+
+<div id="pt" hidden>
+<header><button class="s" data-go="home" style="float:right">メニュー</button><h1>定点観察 (Point Census)</h1><div class="sub">地図をタップしてピンを立て、情報を入力して記録</div></header>
+<div class="ps on" id="ps0">
+<div id="mapw"><div id="map"></div><button id="pOff" class="s" data-go="om">地図を保存</button><button id="pLoc" class="s">現在地へ</button></div>
+<div class="pb">
+<div class="chips" id="recP"></div>
+<label>種名</label>
+<div class="ac"><input id="psp" placeholder="ひらがな・ローマ字でもOK(例: うぐいす / ugui)" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"><ul class="acl" id="psp_l" hidden></ul></div>
+<div class="spi" id="psp_i"></div>
+<div class="row"><div><label>個体数</label><div class="step"><button class="s" data-st="pcnt" data-d="-1">－</button><input type="number" inputmode="numeric" id="pcnt" value="1" min="1"><button class="s" data-st="pcnt" data-d="1">＋</button></div></div>
+<div><label>確認方法</label><select id="phow"></select></div></div>
+<div class="row"><div><label>雌雄・成幼</label><select id="psex"></select></div>
+<div><label>行動</label><select id="pbeh"></select></div></div>
+<label>メモ(同定に不確実なら「○○？」と記入)</label><input id="pmemo">
+<button class="p" id="pAdd">記録する</button><div id="pmsg" class="gps"></div>
+</div></div>
+<div class="ps pb" id="ps1">
+<label>観察日</label><input type="date" id="p_date">
+<label>観測場所（山名）</label><input id="p_site">
+<label>観察者</label><input id="p_members">
+<div class="row"><div><label>開始時刻</label><div class="row"><input type="time" id="p_start"><button class="s" data-pnow="start">今</button></div></div>
+<div><label>終了時刻</label><div class="row"><input type="time" id="p_end"><button class="s" data-pnow="end">今</button></div></div></div>
+<button class="s" id="pwxBtn" style="margin-top:12px;width:100%">天気・気温を自動入力(電波が必要)</button>
+<div class="gps" id="pwxMsg"></div>
+<div class="row"><div><label>天気</label><select id="p_weather"></select></div>
+<div><label>風</label><select id="p_wind"></select></div></div>
+<label>気温(℃)</label><input type="number" inputmode="decimal" id="p_temp">
+<label>メモ</label><textarea id="p_note" rows="3"></textarea>
+<div class="gps">天気データ: Open-Meteo.com</div>
+</div>
+<div class="ps pb" id="ps2">
+<div class="gps upnote"></div><button class="p" id="pExp">Excelで出力</button><div class="gps" id="pExpMsg">地図の取得にはネット接続が必要です。</div><div class="gps" id="psum"></div>
+<h2>記録 <span id="pn"></span></h2><div id="pl"></div>
+<button class="s" id="pClr" style="margin-top:28px;color:var(--warn);border-color:var(--warn)">定点観察の記録を消去</button>
+</div>
+<nav id="pnav"><button class="on" data-t="ps0">観察</button><button data-t="ps1">調査情報</button><button data-t="ps2">一覧・出力</button></nav>
+</div>
+
+<div id="om" hidden>
+<header><button class="s" data-go="home" style="float:right">メニュー</button><h1>オフライン地図の保存</h1><div class="sub">圏外の山でも地図を表示できるよう、行く場所の地図を電波のある所で保存します。</div></header>
+<div style="height:clamp(260px,46dvh,480px);margin-top:8px;position:relative"><div id="omap"></div><button id="omLoc" class="s" style="position:absolute;right:10px;bottom:10px;z-index:1000">現在地へ</button></div>
+<div class="pb">
+<div class="sub">地図を動かして、保存したい場所を円の中心に合わせてください。</div>
+<div class="row"><div><label>保存する範囲(半径)</label><select id="omR"><option value="1000">1km</option><option value="3000" selected>3km</option><option value="5000">5km</option></select></div>
+<div><label>詳細さ</label><select id="omZ"><option value="12-15">標準(登山道が見える)</option><option value="12-16" selected>詳しい</option><option value="12-17">最も詳しい</option></select></div></div>
+<div class="gps" id="omEst"></div>
+<button class="p" id="omGo">この範囲を保存</button>
+<div class="bar" id="omBar" hidden><i></i></div><div class="gps" id="omMsg"></div>
+<div class="blk"><h3>保存済みの地図</h3><div id="omHave" class="sub"></div><button class="s" id="omDel" style="margin-top:8px;color:var(--warn);border-color:var(--warn)">保存した地図を削除</button></div>
+<div class="gps">地図: 国土地理院タイルを利用しています。広い範囲を一度に保存するのは控えてください。</div>
+</div></div>
+
+<div id="dlg" class="ov" hidden role="dialog" aria-modal="true"><div class="dbox">
+<h3 id="dtitle">✓ 出力が完了しました</h3><div class="fn" id="dfn"></div>
+<p id="dmode"></p>
+<p id="dnote">ファイルが端末に保存されたことを確認してから、記録データを消去するか選んでください。</p>
+<p class="sub" id="dwho"></p>
+<button class="p b" id="dNo" style="margin-top:14px">消去しない(残す)</button>
+<button class="b" id="dYes">記録データを消去する</button></div></div>
+
+<div id="edlg" class="ov" hidden role="dialog" aria-modal="true"><div class="dbox">
+<h3>記録を編集</h3><div id="ef"></div>
+<button class="p b" id="eSave">保存</button><button class="b" id="eCancel">キャンセル</button></div></div>
+
+<div id="toast" hidden></div>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
