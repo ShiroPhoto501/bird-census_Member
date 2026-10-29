@@ -1,4 +1,4 @@
-const CACHE = 'bird-census-v10';
+const CACHE = 'bird-census-v11';
 const TILES = 'gsi-tiles-v1';
 const EXT = [
   'https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js',

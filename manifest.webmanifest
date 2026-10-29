@@ -1,6 +1,6 @@
 {
   "name": "野鳥ラインセンサス野帳",
-  "short_name": "野鳥野帳",
+  "short_name": "野鳥野帳-会員用",
   "description": "山岳ラインセンサスの記録とExcel出力",
   "lang": "ja",
   "start_url": "./index.html",

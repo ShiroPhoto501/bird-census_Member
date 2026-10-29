@@ -1,5 +1,5 @@
 'use strict';
-/* 野鳥野帳 app.js */
+/* 野鳥野帳-会員用 app.js */
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const KEY='birdCensusV1';
 const rad=Math.PI/180;
@@ -451,7 +451,7 @@ function gpxText(){
     D.birds.filter(r=>r.lat!==''&&r.lat!=null).map(r=>wp(r,`${r.sp} ×${r.cnt}`,[r.how,r.beh,r.sex,r.memo].filter(Boolean).join(' / '))),
     D.envs.filter(r=>r.lat!==''&&r.lat!=null).map(r=>wp(r,`環境: ${r.veg}`,[r.state,r.food,r.human].filter(Boolean).join(' / '))));
   const T=D.track.map(p=>`<trkpt lat="${p.lat}" lon="${p.lon}">${ele(p.alt)}<time>${iso(p.t)}</time></trkpt>`).join('\n');
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="野鳥野帳" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${x(fname())}</name></metadata>\n${W.join('\n')}\n${D.track.length?`<trk><name>${x(D.info.route||D.info.mountain||'軌跡')}</name><trkseg>\n${T}\n</trkseg></trk>`:''}\n</gpx>\n`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<gpx version="1.1" creator="野鳥野帳-会員用" xmlns="http://www.topografix.com/GPX/1/1">\n<metadata><name>${x(fname())}</name></metadata>\n${W.join('\n')}\n${D.track.length?`<trk><name>${x(D.info.route||D.info.mountain||'軌跡')}</name><trkseg>\n${T}\n</trkseg></trk>`:''}\n</gpx>\n`;
 }
 $('#expGpx').onclick=async()=>{
   if(!D.track.length&&!D.birds.some(r=>r.lat!=='')&&!D.envs.some(r=>r.lat!=='')){$('#expMsg').textContent='出力できる軌跡・位置がまだありません。';return}
